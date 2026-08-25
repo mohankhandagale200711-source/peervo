@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import ProjectCard from '../components/ProjectCard';
 import ProfileCard from '../components/ProfileCard';
-import AdBanner from '../components/AdBanner';
 import { AuthContext } from '../context/AuthContext';
 import { Search, Plus, Flame, Sparkles, Users, FolderGit2, X, Bot, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -178,9 +177,6 @@ export default function Explore() {
           </div>
         </div>
       </div>
-
-      {/* Ad Banner Space */}
-      <AdBanner slot="explore-top" />
 
       {/* Filter Controls Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/80 p-3 rounded-2xl shadow-xl backdrop-blur-xl">

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
 import NoteCard from '../components/NoteCard';
-import AdBanner from '../components/AdBanner';
 import { Search, FileText, Upload, Sparkles, Filter, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -75,9 +74,6 @@ export default function Notes() {
           </Link>
         </div>
       </div>
-
-      {/* Ad Banner Space */}
-      <AdBanner slot="notes-top" />
 
       {/* Search & Course Filters */}
       <div className="space-y-4">
