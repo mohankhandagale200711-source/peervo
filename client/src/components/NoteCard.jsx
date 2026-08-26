@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { FileText, Download, Bookmark, Sparkles, User as UserIcon, Tag, ThumbsUp } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import API from '../services/api';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function NoteCard({ note, isBookmarked: initialBookmarked = false, onDownload }) {
   const { user } = useContext(AuthContext);
@@ -13,7 +14,7 @@ export default function NoteCard({ note, isBookmarked: initialBookmarked = false
       setDownloads((prev) => prev + 1);
       await API.put(`/notes/${note._id}/download`);
       if (onDownload) onDownload(note._id);
-      window.open(note.fileUrl, '_blank');
+      window.open(getMediaUrl(note.fileUrl), '_blank');
     } catch (err) {
       console.error('Download error:', err);
     }
@@ -74,7 +75,7 @@ export default function NoteCard({ note, isBookmarked: initialBookmarked = false
           {note.uploadedBy && typeof note.uploadedBy === 'object' ? (
             <div className="flex items-center gap-2">
               {note.uploadedBy.profilePic ? (
-                <img src={note.uploadedBy.profilePic} alt="" className="w-6 h-6 rounded-full object-cover border border-indigo-500/40" />
+                <img src={getMediaUrl(note.uploadedBy.profilePic)} alt="" className="w-6 h-6 rounded-full object-cover border border-indigo-500/40" />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center">
                   {note.uploadedBy.name?.charAt(0)}

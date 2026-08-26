@@ -3,6 +3,7 @@ import { Star, Bookmark, ExternalLink, Github, Code2, Trash2, Sparkles } from 'l
 import { AuthContext } from '../context/AuthContext';
 import API from '../services/api';
 import { Link } from 'react-router-dom';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function ProjectCard({ project, onUpdate, isBookmarked: initialBookmarked = false, onDelete }) {
   const { user } = useContext(AuthContext);
@@ -47,9 +48,12 @@ export default function ProjectCard({ project, onUpdate, isBookmarked: initialBo
       {project.screenshot ? (
         <div className="relative h-48 overflow-hidden bg-slate-950">
           <img
-            src={project.screenshot}
+            src={getMediaUrl(project.screenshot)}
             alt={project.title}
             className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90"></div>
         </div>
@@ -70,7 +74,7 @@ export default function ProjectCard({ project, onUpdate, isBookmarked: initialBo
             <div className="flex items-center gap-2 mb-3">
               <Link to={`/profile/${project.owner._id}`} className="flex items-center gap-2 group/owner">
                 {project.owner.profilePic ? (
-                  <img src={project.owner.profilePic} alt="" className="w-6 h-6 rounded-full object-cover border border-indigo-500/40" />
+                  <img src={getMediaUrl(project.owner.profilePic)} alt="" className="w-6 h-6 rounded-full object-cover border border-indigo-500/40" />
                 ) : (
                   <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center">
                     {project.owner.name?.charAt(0)}

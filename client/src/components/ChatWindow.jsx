@@ -8,6 +8,7 @@ import CodePlaygroundModal from './CodePlaygroundModal';
 import WhiteboardModal from './WhiteboardModal';
 import API from '../services/api';
 import { Send, Users, Sparkles, ArrowLeft, Video, Phone, Code2, Palette } from 'lucide-react';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function ChatWindow({ activeChat, onBack }) {
   const { user } = useContext(AuthContext);
@@ -175,7 +176,7 @@ export default function ChatWindow({ activeChat, onBack }) {
               <Users className="w-5 h-5" />
             </div>
           ) : otherUser?.profilePic ? (
-            <img src={otherUser.profilePic} alt="" className="w-10 h-10 rounded-2xl object-cover border border-indigo-500/40" />
+            <img src={getMediaUrl(otherUser.profilePic)} alt="" className="w-10 h-10 rounded-2xl object-cover border border-indigo-500/40" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           ) : (
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-extrabold flex items-center justify-center text-sm shadow-md">
               {otherUser?.name?.charAt(0) || 'U'}

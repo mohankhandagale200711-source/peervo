@@ -5,6 +5,7 @@ import ChatWindow from '../components/ChatWindow';
 import { AuthContext } from '../context/AuthContext';
 import { SocketContext } from '../context/SocketContext';
 import { MessageSquare, Users, Plus, X, Search } from 'lucide-react';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function Chat() {
   const { user } = useContext(AuthContext);
@@ -179,7 +180,7 @@ export default function Chat() {
                         <Users className="w-5 h-5" />
                       </div>
                     ) : other?.profilePic ? (
-                      <img src={other.profilePic} alt="" className="w-10 h-10 rounded-2xl object-cover" />
+                      <img src={getMediaUrl(other.profilePic)} alt="" className="w-10 h-10 rounded-2xl object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     ) : (
                       <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-bold flex items-center justify-center text-sm">
                         {other?.name?.charAt(0) || 'U'}

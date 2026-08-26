@@ -2,6 +2,7 @@ import React, { useState, useContext, useRef, useEffect } from 'react';
 import { Bell, Star, MessageSquare, CheckCheck, FileText, FolderGit2 } from 'lucide-react';
 import { NotificationContext } from '../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useContext(NotificationContext);
@@ -85,9 +86,10 @@ export default function NotificationBell() {
                   <div className="relative flex-shrink-0 mt-0.5">
                     {n.fromUser?.profilePic ? (
                       <img
-                        src={n.fromUser.profilePic}
+                        src={getMediaUrl(n.fromUser.profilePic)}
                         alt=""
                         className="w-9 h-9 rounded-full object-cover border border-slate-700"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white text-xs shadow-inner">

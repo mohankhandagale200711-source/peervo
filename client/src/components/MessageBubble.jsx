@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, CheckCheck } from 'lucide-react';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function MessageBubble({ message, isOwn }) {
   const formattedTime = message.createdAt
@@ -12,9 +13,10 @@ export default function MessageBubble({ message, isOwn }) {
         <div className="flex-shrink-0">
           {message.senderId?.profilePic ? (
             <img
-              src={message.senderId.profilePic}
+              src={getMediaUrl(message.senderId.profilePic)}
               alt=""
               className="w-7 h-7 rounded-full object-cover border border-slate-700"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           ) : (
             <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-bold text-[10px] flex items-center justify-center">

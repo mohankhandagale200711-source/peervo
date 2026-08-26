@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
 import MockInterviewModal from './MockInterviewModal';
+import { getMediaUrl } from '../utils/urlHelper';
 import {
   Compass,
   FileText,
@@ -141,9 +142,12 @@ export default function Navbar() {
                     >
                       {user.profilePic ? (
                         <img
-                          src={user.profilePic}
+                          src={getMediaUrl(user.profilePic)}
                           alt=""
                           className="w-9 h-9 rounded-full object-cover border-2 border-indigo-500/40 group-hover/prof:border-indigo-400 transition"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       ) : (
                         <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-extrabold text-white text-xs shadow-md">
@@ -204,7 +208,7 @@ export default function Navbar() {
               className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800 mb-3"
             >
               {user.profilePic ? (
-                <img src={user.profilePic} alt="" className="w-10 h-10 rounded-full object-cover border border-indigo-500/50" />
+                <img src={getMediaUrl(user.profilePic)} alt="" className="w-10 h-10 rounded-full object-cover border border-indigo-500/50" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white">
                   {user.name?.charAt(0) || 'U'}

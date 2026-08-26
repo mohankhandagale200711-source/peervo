@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import { SocketContext } from '../context/SocketContext';
 import { Users, FolderGit2, FileText, MessageSquare, ShieldCheck, Trash2, RefreshCw, Sparkles, Activity } from 'lucide-react';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function AdminDashboard() {
   const { onlineUsers } = useContext(SocketContext);
@@ -151,7 +152,7 @@ export default function AdminDashboard() {
                   <tr key={student._id} className="hover:bg-slate-800/40 transition">
                     <td className="p-3.5 flex items-center gap-2.5 font-bold text-white">
                       {student.profilePic ? (
-                        <img src={student.profilePic} alt="" className="w-7 h-7 rounded-full object-cover border border-indigo-500/40" />
+                        <img src={getMediaUrl(student.profilePic)} alt="" className="w-7 h-7 rounded-full object-cover border border-indigo-500/40" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center">
                           {student.name?.charAt(0)}

@@ -3,15 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Peervo — Student Portfolio & Real-time Collaboration Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Peervo" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="description" content="Student Portfolio, Course Notes Hub, Real-Time Collaboration & AI Platform" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <title>Peervo — Student Portfolio &amp; Real-time Collaboration Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-BNuOD_eY.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-dzcO7S9h.css">
+    <script type="module" crossorigin src="/assets/index-BmoIRZXb.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-ggu8sghl.css">
   </head>
   <body class="bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-indigo-500 selection:text-white">
     <div id="root"></div>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Peervo PWA: Service Worker registered', reg.scope))
+            .catch(err => console.warn('Peervo PWA: Service Worker failed', err));
+        });
+      }
+    </script>
   </body>
 </html>

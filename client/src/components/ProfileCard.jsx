@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { GraduationCap, MessageSquare, ShieldCheck } from 'lucide-react';
+import { getMediaUrl } from '../utils/urlHelper';
 
 export default function ProfileCard({ student }) {
   const { user } = useContext(AuthContext);
@@ -23,9 +24,12 @@ export default function ProfileCard({ student }) {
         >
           {student.profilePic ? (
             <img
-              src={student.profilePic}
+              src={getMediaUrl(student.profilePic)}
               alt=""
               className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-indigo-500/40 group-hover:border-indigo-400 transition"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
           ) : (
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg">
