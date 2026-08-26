@@ -1,0 +1,42 @@
+{
+  "name": "Peervo — Student Portfolio & AI Platform",
+  "short_name": "Peervo",
+  "description": "Student Portfolio, Course Notes Hub, Real-Time Collaboration & AI Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity", "social"],
+  "shortcuts": [
+    {
+      "name": "Explore",
+      "url": "/explore",
+      "description": "Explore student projects and portfolios"
+    },
+    {
+      "name": "Chat & AI",
+      "url": "/chat",
+      "description": "Chat with peers and Peervo AI"
+    },
+    {
+      "name": "Course Notes",
+      "url": "/notes",
+      "description": "Access course study notes"
+    }
+  ]
+}
