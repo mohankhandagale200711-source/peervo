@@ -54,15 +54,27 @@ export default function ChatWindow({ activeChat, onBack }) {
     if (!socket) return;
 
     const handleReceiveMessage = (data) => {
-      if (data.chat._id === activeChat?._id) {
-        setMessages((prev) => [...prev, data.message]);
+      const incomingChatId = data.chat?._id?.toString() || data.message?.chatId?.toString();
+      if (incomingChatId === activeChat?._id?.toString()) {
+        setMessages((prev) => {
+          // Deduplicate: avoid adding the same message twice
+          const exists = prev.some((m) => m._id?.toString() === data.message?._id?.toString());
+          if (exists) return prev;
+          return [...prev, data.message];
+        });
         socket.emit('mark_message_read', { chatId: activeChat._id, userId: user._id });
       }
     };
 
     const handleMessageSent = (sentMsg) => {
-      if (sentMsg.chatId === activeChat?._id) {
-        setMessages((prev) => [...prev, sentMsg]);
+      const sentChatId = sentMsg.chatId?.toString() || sentMsg.chatId;
+      const activeChatId = activeChat?._id?.toString();
+      if (sentChatId === activeChatId) {
+        setMessages((prev) => {
+          const exists = prev.some((m) => m._id?.toString() === sentMsg._id?.toString());
+          if (exists) return prev;
+          return [...prev, sentMsg];
+        });
       }
     };
 

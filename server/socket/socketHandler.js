@@ -211,16 +211,25 @@ const socketHandler = (io) => {
           return;
         }
 
-        // Emit message to human chat room members except sender
+        // Broadcast message to entire chat room (sender + all participants)
+        // Using io.to(chatId) is the most reliable cross-domain delivery method
+        io.to(chatId.toString()).emit('receive_message', {
+          message,
+          chat,
+        });
+
+        // Also emit directly to each participant's personal room in case chat not open
         chat.participants.forEach((participant) => {
           const participantId = participant._id.toString();
           if (participantId === senderId.toString()) return;
 
-          socket.in(participantId).emit('receive_message', {
+          // Emit to participant's personal socket room
+          io.to(participantId).emit('receive_message', {
             message,
             chat,
           });
 
+          // Send notification
           Notification.create({
             userId: participantId,
             type: 'message',
