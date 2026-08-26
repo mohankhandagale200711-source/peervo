@@ -14,7 +14,7 @@ export default function ProfileCard({ student }) {
     setStarting(true);
     try {
       // Create or get existing 1-on-1 chat with this student
-      const res = await API.post('/chat', { participantId: student._id });
+      const res = await API.post('/chat', { userId: student._id });
       const chat = res.data;
       // Navigate to chat page and open this specific chat
       navigate('/chat', { state: { selectedChat: chat } });
