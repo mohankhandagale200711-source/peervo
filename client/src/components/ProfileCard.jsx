@@ -1,13 +1,39 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { GraduationCap, Code2, Sparkles, MessageSquare, ShieldCheck } from 'lucide-react';
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import API from '../services/api';
+import { GraduationCap, MessageSquare, ShieldCheck, Loader2 } from 'lucide-react';
 
 export default function ProfileCard({ student }) {
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [starting, setStarting] = useState(false);
+
+  const handleMessage = async () => {
+    if (!user) return navigate('/login');
+    setStarting(true);
+    try {
+      // Create or get existing 1-on-1 chat with this student
+      const res = await API.post('/chat', { participantId: student._id });
+      const chat = res.data;
+      // Navigate to chat page and open this specific chat
+      navigate('/chat', { state: { selectedChat: chat } });
+    } catch (err) {
+      console.error('Failed to start chat:', err);
+      navigate('/chat');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   return (
     <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 hover:border-indigo-500/40 rounded-3xl p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 group">
       {/* Student Details */}
       <div className="flex items-start gap-4">
-        <Link to={`/profile/${student._id}`} className="relative">
+        <div
+          className="relative cursor-pointer"
+          onClick={() => navigate(`/profile/${student._id}`)}
+        >
           {student.profilePic ? (
             <img
               src={student.profilePic}
@@ -20,16 +46,16 @@ export default function ProfileCard({ student }) {
             </div>
           )}
           <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
-        </Link>
+        </div>
 
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Link
-              to={`/profile/${student._id}`}
+            <button
+              onClick={() => navigate(`/profile/${student._id}`)}
               className="text-lg font-extrabold text-white hover:text-indigo-400 transition tracking-tight"
             >
               {student.name}
-            </Link>
+            </button>
             <ShieldCheck className="w-4 h-4 text-indigo-400" title="Verified Student" />
           </div>
 
@@ -63,18 +89,24 @@ export default function ProfileCard({ student }) {
 
       {/* Profile Actions */}
       <div className="flex items-center gap-2 w-full sm:w-auto">
-        <Link
-          to={`/profile/${student._id}`}
+        <button
+          onClick={() => navigate(`/profile/${student._id}`)}
           className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition text-center"
         >
           View Profile
-        </Link>
-        <Link
-          to="/chat"
-          className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition text-center flex items-center justify-center gap-1.5"
+        </button>
+        <button
+          onClick={handleMessage}
+          disabled={starting}
+          className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition text-center flex items-center justify-center gap-1.5"
         >
-          <MessageSquare className="w-3.5 h-3.5" /> Message
-        </Link>
+          {starting ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <MessageSquare className="w-3.5 h-3.5" />
+          )}
+          {starting ? 'Opening...' : 'Message'}
+        </button>
       </div>
     </div>
   );
