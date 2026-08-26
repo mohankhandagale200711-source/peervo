@@ -26,25 +26,48 @@ const server = http.createServer(app);
 // Connect Database
 connectDB();
 
-// CORS setup
+// Allow all origins for production cross-domain compatibility
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://peervo-c51g.vercel.app',
+  'https://peervo-1.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 const corsOptions = {
-  origin: process.env.CLIENT_URL || '*',
-  credentials: true,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all for now
+  },
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
+
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static Folder for File Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Attach Socket.IO
+// Attach Socket.IO with permissive CORS
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: false,
   },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
 });
+
 app.set('io', io);
 socketHandler(io);
 
