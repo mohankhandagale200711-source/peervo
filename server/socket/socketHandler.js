@@ -142,9 +142,21 @@ const socketHandler = (io) => {
           aiMessage = await aiMessage.populate('senderId', 'name profilePic email');
           await Chat.findByIdAndUpdate(chatId, { lastMessage: aiMessage._id });
 
-          // Stop AI typing status and emit Gemini AI message to user
+          // Stop AI typing status
+          io.to(chatId.toString()).emit('stop_typing', chatId);
           io.to(senderId.toString()).emit('stop_typing', chatId);
+          socket.emit('stop_typing', chatId);
+
+          // Emit Gemini AI message to entire chat room and sender
+          io.to(chatId.toString()).emit('receive_message', {
+            message: aiMessage,
+            chat,
+          });
           io.to(senderId.toString()).emit('receive_message', {
+            message: aiMessage,
+            chat,
+          });
+          socket.emit('receive_message', {
             message: aiMessage,
             chat,
           });
