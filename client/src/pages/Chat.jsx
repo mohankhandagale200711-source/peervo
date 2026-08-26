@@ -25,12 +25,32 @@ export default function Chat() {
   const [allUsers, setAllUsers] = useState([]);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
 
+  // Handle "Message" button from ProfileCard — create/find chat with specific user
+  useEffect(() => {
+    const startChatWithUser = location.state?.startChatWithUser;
+    if (startChatWithUser && user) {
+      const initChat = async () => {
+        try {
+          const res = await API.post('/chat', { userId: startChatWithUser._id });
+          const chat = res.data;
+          setActiveChat(chat);
+          setShowMobileChatWindow(true);
+          // Clear navigation state so it doesn't re-trigger
+          window.history.replaceState({}, document.title);
+        } catch (err) {
+          console.error('Error creating chat with user:', err);
+        }
+      };
+      initChat();
+    }
+  }, [location.state, user]);
+
   const fetchChats = async () => {
     try {
       setLoading(true);
       const res = await API.get('/chat');
       setChats(res.data);
-      if (!activeChat && res.data.length > 0 && window.innerWidth >= 768) {
+      if (!activeChat && !location.state?.startChatWithUser && res.data.length > 0 && window.innerWidth >= 768) {
         setActiveChat(res.data[0]);
       }
     } catch (err) {

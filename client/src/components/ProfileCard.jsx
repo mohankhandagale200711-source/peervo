@@ -1,29 +1,16 @@
 import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import API from '../services/api';
-import { GraduationCap, MessageSquare, ShieldCheck, Loader2 } from 'lucide-react';
+import { GraduationCap, MessageSquare, ShieldCheck } from 'lucide-react';
 
 export default function ProfileCard({ student }) {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [starting, setStarting] = useState(false);
 
-  const handleMessage = async () => {
+  const handleMessage = () => {
     if (!user) return navigate('/login');
-    setStarting(true);
-    try {
-      // Create or get existing 1-on-1 chat with this student
-      const res = await API.post('/chat', { userId: student._id });
-      const chat = res.data;
-      // Navigate to chat page and open this specific chat
-      navigate('/chat', { state: { selectedChat: chat } });
-    } catch (err) {
-      console.error('Failed to start chat:', err);
-      navigate('/chat');
-    } finally {
-      setStarting(false);
-    }
+    // Pass the friend's info to Chat page — let Chat page create/find the chat
+    navigate('/chat', { state: { startChatWithUser: student } });
   };
 
   return (
@@ -71,7 +58,6 @@ export default function ProfileCard({ student }) {
             </p>
           )}
 
-          {/* Skill Badges */}
           {student.skills && student.skills.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {student.skills.map((skill, i) => (
@@ -97,15 +83,9 @@ export default function ProfileCard({ student }) {
         </button>
         <button
           onClick={handleMessage}
-          disabled={starting}
-          className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition text-center flex items-center justify-center gap-1.5"
+          className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition text-center flex items-center justify-center gap-1.5"
         >
-          {starting ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <MessageSquare className="w-3.5 h-3.5" />
-          )}
-          {starting ? 'Opening...' : 'Message'}
+          <MessageSquare className="w-3.5 h-3.5" /> Message
         </button>
       </div>
     </div>
