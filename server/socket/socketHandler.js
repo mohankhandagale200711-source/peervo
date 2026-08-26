@@ -2,68 +2,9 @@ const Message = require('../models/Message');
 const Chat = require('../models/Chat');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { getAiAnswer } = require('../services/aiKnowledgeEngine');
 
 let onlineUsers = new Map(); // userId -> socketId
-
-// Gemini 3.6 Flash & Fallback Response Handler
-const fetchAiResponse = async (userPrompt) => {
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-
-  // 1. Primary: Official Google Gemini 3.6 Flash Engine
-  if (geminiApiKey && geminiApiKey.trim()) {
-    try {
-      const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
-      const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
-      
-      const systemContext = "You are Peervo AI, an expert computer science, programming, general knowledge, math, essay writing, and academic assistant. Answer the user prompt accurately, thoroughly, and with clean markdown code formatting.";
-      const fullPrompt = `${systemContext}\n\nQuestion: ${userPrompt}`;
-
-      const result = await model.generateContent(fullPrompt);
-      const response = await result.response;
-      const text = response.text();
-
-      if (text && text.trim()) {
-        console.log('⚡ Gemini 3.6 Flash AI Response Generated');
-        return text.trim();
-      }
-    } catch (err) {
-      console.error('Google Gemini API Error:', err.message);
-    }
-  }
-
-  // 2. Direct REST Fallback for Gemini 3.6 Flash
-  if (geminiApiKey && geminiApiKey.trim()) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiApiKey.trim()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `Answer this question thoroughly with markdown: ${userPrompt}` }] }]
-        })
-      });
-      const data = await res.json();
-      if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-        return data.candidates[0].content.parts[0].text;
-      }
-    } catch (err) {
-      console.error('Gemini Direct REST Error:', err.message);
-    }
-  }
-
-  // 3. Fallback: Intelligent Knowledge Engine (Guaranteed 100% answer)
-  return `### 🤖 Peervo AI Response
-
-Here is a breakdown for **"${userPrompt}"**:
-
-1. **Overview**: In technical and academic topics, addressing this question requires breaking it down into core principles and implementation steps.
-2. **Key Concepts**:
-   - Structure your logic into modular, readable functions or components.
-   - Always validate inputs, handle exception boundaries, and optimize time/space complexity.
-   - Test using mini examples before shipping to production.
-
-Feel free to ask follow-up questions or request code examples on React, Node.js, Python, Databases, or DSA!`;
-};
 
 const socketHandler = (io) => {
   io.on('connection', (socket) => {
@@ -187,8 +128,8 @@ const socketHandler = (io) => {
           // Trigger AI typing status
           io.to(senderId.toString()).emit('typing', chatId);
 
-          // Get Gemini 3.6 Flash response asynchronously
-          const aiReplyText = await fetchAiResponse(text);
+          // Get Peervo AI response asynchronously
+          const aiReplyText = await getAiAnswer(text);
 
           // Create AI response message
           let aiMessage = await Message.create({
