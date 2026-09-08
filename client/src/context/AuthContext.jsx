@@ -38,11 +38,25 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const res = await API.post('/auth/register', userData);
-    const { token: userToken, ...user } = res.data;
+    const { token: userToken, ...userDataObj } = res.data;
     localStorage.setItem('token', userToken);
     setToken(userToken);
-    setUser(user);
-    return user;
+    setUser(userDataObj);
+    return userDataObj;
+  };
+
+  const sendOtp = async (email, name) => {
+    const res = await API.post('/auth/send-otp', { email, name });
+    return res.data;
+  };
+
+  const verifyOtpAndRegister = async (registrationDataWithOtp) => {
+    const res = await API.post('/auth/verify-otp-and-register', registrationDataWithOtp);
+    const { token: userToken, ...userData } = res.data;
+    localStorage.setItem('token', userToken);
+    setToken(userToken);
+    setUser(userData);
+    return userData;
   };
 
   const logout = () => {
@@ -63,6 +77,8 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        sendOtp,
+        verifyOtpAndRegister,
         logout,
         updateUser,
       }}
