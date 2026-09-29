@@ -10,7 +10,7 @@ const getAiAnswer = async (userPrompt) => {
 
   // 1. Direct REST Call to Official Gemini 3.6 Flash
   if (geminiApiKey) {
-    const models = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+    const models = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
     for (const model of models) {
       try {
         const systemPrompt = "You are Peervo AI, an expert, brilliant, and friendly AI tutor for computer science, engineering, coding, math, general knowledge, career preparation, and academic studies. Always provide accurate, structured, complete answers with clean markdown headings, explanations, and well-formatted code blocks with comments.";
