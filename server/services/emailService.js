@@ -91,7 +91,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Student') => {
     console.log(`👉 CODE: [ ${otpCode} ] (Valid for 10 minutes)`);
     console.log('💡 Note: Set EMAIL_PASS in Render Environment to deliver live Gmail emails.');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    return { success: true, simulated: true };
+    return { success: true, simulated: true, otpCode };
   }
 
   try {
@@ -109,7 +109,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Student') => {
     console.error(`❌ Failed to send verification email to ${toEmail}:`, error.message);
     // Fallback: log code so development and registration never get blocked
     console.log(`👉 FALLBACK CODE: [ ${otpCode} ] for ${toEmail}`);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, fallbackCode: otpCode };
   }
 };
 

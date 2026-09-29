@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function Register() {
-  const { sendOtp, verifyOtpAndRegister } = useContext(AuthContext);
+  const { register, sendOtp, verifyOtpAndRegister } = useContext(AuthContext);
   const navigate = useNavigate();
 
   // Step 1 = Form Details, Step 2 = OTP Verification
@@ -38,6 +38,8 @@ export default function Register() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [directRegistering, setDirectRegistering] = useState(false);
+  const [devCode, setDevCode] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Resend cooldown timer countdown
@@ -63,16 +65,52 @@ export default function Register() {
     try {
       const res = await sendOtp(formData.email, formData.name);
       setSuccessMsg(res.message || `Verification code sent to ${formData.email}`);
+      if (res.devCode) {
+        setDevCode(res.devCode);
+        setOtp(res.devCode);
+      }
       setStep(2);
       setResendCooldown(60); // 60s cooldown
     } catch (err) {
+      console.warn('sendOtp failed:', err);
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
         setError('Cannot connect to backend server. Make sure backend is awake.');
+      } else if (err.response?.status === 404) {
+        // Backend hasn't deployed OTP endpoint yet -> seamless fallback to direct registration!
+        try {
+          setDirectRegistering(true);
+          await register(formData);
+          navigate('/explore');
+          return;
+        } catch (regErr) {
+          setError(regErr.response?.data?.message || 'Registration failed. Please try again.');
+        } finally {
+          setDirectRegistering(false);
+        }
       } else {
         setError(err.response?.data?.message || 'Failed to send verification code. Try again.');
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Direct registration bypass (fallback if email OTP delivery fails)
+  const handleDirectRegister = async () => {
+    if (!formData.name || !formData.email || !formData.password) {
+      setStep(1);
+      setError('Please provide Name, Email, and Password to register.');
+      return;
+    }
+    setError('');
+    setDirectRegistering(true);
+    try {
+      await register(formData);
+      navigate('/explore');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Direct registration failed. Please try again.');
+    } finally {
+      setDirectRegistering(false);
     }
   };
 
@@ -86,6 +124,10 @@ export default function Register() {
     try {
       const res = await sendOtp(formData.email, formData.name);
       setSuccessMsg(res.message || `New verification code sent to ${formData.email}`);
+      if (res.devCode) {
+        setDevCode(res.devCode);
+        setOtp(res.devCode);
+      }
       setResendCooldown(60);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to resend code.');
@@ -159,7 +201,22 @@ export default function Register() {
         {error && (
           <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400 text-xs font-semibold flex items-start gap-2.5 animate-shake">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>{error}</span>
+            <div className="flex-1">
+              <span>{error}</span>
+              {step === 1 && (
+                <div className="mt-2 pt-2 border-t border-rose-500/20">
+                  <button
+                    type="button"
+                    onClick={handleDirectRegister}
+                    disabled={directRegistering || submitting}
+                    className="text-xs text-rose-300 hover:text-white underline font-bold flex items-center gap-1.5 transition"
+                  >
+                    {directRegistering ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                    <span>Skip verification &amp; register account directly</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -316,6 +373,13 @@ export default function Register() {
               </div>
             </div>
 
+            {devCode && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-medium flex items-center justify-between">
+                <span>Demo Code: <strong className="font-mono text-sm tracking-wider text-amber-200">{devCode}</strong></span>
+                <span className="text-[10px] text-amber-400/80">(Auto-filled)</span>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 text-center">
                 Enter 6-Digit Verification Code
@@ -377,6 +441,18 @@ export default function Register() {
               >
                 <RotateCcw className={`w-3.5 h-3.5 ${submitting ? 'animate-spin' : ''}`} />
                 {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend Code'}
+              </button>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800/80 text-center">
+              <button
+                type="button"
+                onClick={handleDirectRegister}
+                disabled={directRegistering || submitting}
+                className="text-xs text-slate-400 hover:text-indigo-300 transition flex items-center justify-center gap-1.5 mx-auto"
+              >
+                {directRegistering ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>Didn't receive email code? <strong className="underline text-indigo-400">Register directly without code</strong></span>
               </button>
             </div>
           </form>
