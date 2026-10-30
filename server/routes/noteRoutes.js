@@ -15,6 +15,7 @@ router.get('/search', searchNotes);
 router.get('/course/:course', getNotesByCourse);
 
 router.route('/')
+  .get(searchNotes)
   .post(protect, upload.single('file'), createNote);
 
 router.route('/:id')

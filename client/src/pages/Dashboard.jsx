@@ -53,7 +53,7 @@ export default function Dashboard() {
         setLoading(true);
         const [projRes, noteRes, studRes] = await Promise.allSettled([
           API.get('/projects?sort=trending'),
-          API.get('/notes?sort=trending'),
+          API.get('/notes/search?sort=trending'),
           API.get('/users/search'),
         ]);
 
@@ -220,7 +220,11 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-semibold">
-                        {proj.techStack ? proj.techStack.split(',')[0] : 'Engineering'}
+                        {Array.isArray(proj.techStack)
+                          ? (proj.techStack[0] || 'Engineering')
+                          : (typeof proj.techStack === 'string' && proj.techStack.trim()
+                              ? proj.techStack.split(',')[0].trim()
+                              : 'Engineering')}
                       </span>
                       <div className="flex items-center gap-1.5 text-[11px] text-amber-400">
                         <Star className="w-3 h-3 fill-amber-400" />
