@@ -32,10 +32,18 @@ export default function NotificationBell() {
     }
   };
 
+  const handleToggleDropdown = () => {
+    const nextState = !isOpen;
+    if (nextState && unreadCount > 0) {
+      markAllAsRead();
+    }
+    setIsOpen(nextState);
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggleDropdown}
         className="relative p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition duration-200"
         title="Notifications"
       >

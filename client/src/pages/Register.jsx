@@ -151,7 +151,7 @@ export default function Register() {
         ...formData,
         otp: otp.trim(),
       });
-      navigate('/explore');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid or expired code. Please try again.');
     } finally {

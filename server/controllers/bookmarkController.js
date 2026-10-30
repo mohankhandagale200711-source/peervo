@@ -5,7 +5,8 @@ const Bookmark = require('../models/Bookmark');
 // @access  Private
 const getBookmarks = async (req, res) => {
   try {
-    const userId = req.params.userId || req.user._id;
+    // Only return bookmarks belonging to the authenticated user
+    const userId = req.user._id;
     const bookmarks = await Bookmark.find({ userId })
       .populate({
         path: 'itemId',

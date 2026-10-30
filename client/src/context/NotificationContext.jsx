@@ -30,21 +30,33 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('notification_received', (newNotif) => {
-      setNotifications((prev) => [newNotif, ...prev]);
+    const handleNewNotif = (newNotif) => {
+      setNotifications((prev) => {
+        const exists = prev.some((n) => n._id?.toString() === newNotif._id?.toString());
+        if (exists) return prev;
+        return [newNotif, ...prev];
+      });
       setUnreadCount((prev) => prev + 1);
-    });
+    };
+
+    const handleUpdated = () => {
+      fetchNotifications();
+    };
+
+    socket.on('notification_received', handleNewNotif);
+    socket.on('notifications_updated', handleUpdated);
 
     return () => {
-      socket.off('notification_received');
+      socket.off('notification_received', handleNewNotif);
+      socket.off('notifications_updated', handleUpdated);
     };
-  }, [socket]);
+  }, [socket, user]);
 
   const markAsRead = async (id) => {
     try {
       await API.put(`/notifications/${id}/read`);
       setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n._id?.toString() === id?.toString() ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {

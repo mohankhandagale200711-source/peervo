@@ -9,7 +9,14 @@ dist/
 
 # Environment files
 .env
+.env*
 server/.env
+
+# Temporary artifacts & builds
+.codex-finalizer/
+.pptx-build/
+dashboard/
+output/
 
 # System & IDE files
 .DS_Store

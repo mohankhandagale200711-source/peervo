@@ -3,16 +3,12 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Otp = require('../models/Otp');
 const { sendOtpEmail } = require('../services/emailService');
+const { isAdminUser } = require('../config/adminConfig'); // BUG-21: single source of truth
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'peervo_jwt_secret_key_123', {
     expiresIn: '30d',
   });
-};
-
-const getAdminStatus = (user) => {
-  const configuredAdmin = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  return Boolean(user.isAdmin || (configuredAdmin && user.email.toLowerCase() === configuredAdmin));
 };
 
 // @desc    Step 1: Send OTP to verify real Email address before registration
@@ -89,7 +85,8 @@ const verifyOtpAndRegister = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanOtp = otp.toString().trim();
 
-    // Check OTP in database
+    // BUG-04: OTP expiry is handled by MongoDB TTL index on the Otp model (expires: 600s).
+    // The findOne will return null if the document has been auto-deleted after 10 minutes.
     const otpRecord = await Otp.findOne({ email: cleanEmail, otp: cleanOtp });
     if (!otpRecord) {
       return res.status(400).json({ message: 'Invalid or expired verification code. Please request a new one.' });
@@ -127,7 +124,7 @@ const verifyOtpAndRegister = async (req, res) => {
         skills: user.skills,
         education: user.education,
         profilePic: user.profilePic,
-        isAdmin: getAdminStatus(user),
+        isAdmin: isAdminUser(user),
         token: generateToken(user._id),
       });
     } else {
@@ -164,7 +161,8 @@ const registerUser = async (req, res) => {
       email: cleanEmail,
       password: hashedPassword,
       bio: bio || '',
-      skills: Array.isArray(skills) ? skills : (skills ? skills.split(',').map((s) => s.trim()) : []),
+      // BUG-09: added .filter(Boolean) to remove empty strings from trailing commas
+      skills: Array.isArray(skills) ? skills : (skills ? skills.split(',').map((s) => s.trim()).filter(Boolean) : []),
       education: education || '',
     });
 
@@ -177,7 +175,7 @@ const registerUser = async (req, res) => {
         skills: user.skills,
         education: user.education,
         profilePic: user.profilePic,
-        isAdmin: getAdminStatus(user),
+        isAdmin: isAdminUser(user),
         token: generateToken(user._id),
       });
     } else {
@@ -211,7 +209,7 @@ const loginUser = async (req, res) => {
         skills: user.skills,
         education: user.education,
         profilePic: user.profilePic,
-        isAdmin: getAdminStatus(user),
+        isAdmin: isAdminUser(user),
         token: generateToken(user._id),
       });
     } else {
@@ -228,7 +226,7 @@ const loginUser = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    res.json({ ...user.toObject(), isAdmin: getAdminStatus(user) });
+    res.json({ ...user.toObject(), isAdmin: isAdminUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

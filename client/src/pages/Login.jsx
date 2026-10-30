@@ -17,7 +17,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await login(email, password);
-      navigate('/explore');
+      navigate('/dashboard');
     } catch (err) {
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
         setError('Cannot connect to backend server. Make sure "npm run dev" is running in your terminal!');

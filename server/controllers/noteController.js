@@ -96,6 +96,7 @@ const searchNotes = async (req, res) => {
     if (sort === 'trending') {
       const notes = await Note.find(query)
         .populate('uploadedBy', 'name email profilePic')
+        .limit(200)
         .lean();
       
       notes.sort((a, b) => (b.likedBy ? b.likedBy.length : 0) - (a.likedBy ? a.likedBy.length : 0));
@@ -104,7 +105,8 @@ const searchNotes = async (req, res) => {
 
     const notes = await Note.find(query)
       .populate('uploadedBy', 'name email profilePic')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(200);
 
     res.json(notes);
   } catch (error) {

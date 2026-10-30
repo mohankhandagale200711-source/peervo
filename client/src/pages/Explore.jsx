@@ -102,79 +102,145 @@ export default function Explore() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Premium Hero Banner */}
-      <div className="relative rounded-3xl p-8 sm:p-12 overflow-hidden border border-slate-800 bg-gradient-to-br from-indigo-950/80 via-slate-900/90 to-purple-950/80 shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-0 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-0 pointer-events-none"></div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 text-slate-100">
+      {/* Apple-Style Bento Grid Showcase Header */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Bento Card 1: Verified Engineering Portfolio & Project Widgets (8 cols) */}
+        <div className="lg:col-span-8 rounded-3xl p-6 sm:p-10 relative overflow-hidden border border-white/[0.08] bg-slate-900/40 backdrop-blur-2xl shadow-2xl flex flex-col justify-between group hover:border-cyan-500/30 transition duration-500">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-cyan-500/15 via-purple-500/10 to-transparent rounded-bl-full pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold mb-4">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
-            <span>Student Collaboration & Portfolio Platform</span>
+          <div className="relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold tracking-wide">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />
+                <span>VERIFIED ENGINEERING PORTFOLIO</span>
+              </div>
+              <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                100% Peer Verified
+              </span>
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight mb-3">
+              Showcase. Collaborate.{' '}
+              <span className="bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+                Elevate Engineering.
+              </span>
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 max-w-2xl font-normal">
+              Explore peer project showcases with dynamic project widgets, read categorized markdown study notes, and collaborate with scholars and 24/7 AI copilots.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {user && (
+                <button
+                  onClick={() => setShowProjectModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-cyan-500/25 transition transform hover:-translate-y-0.5"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" /> Showcase Your Project
+                </button>
+              )}
+
+              <Link
+                to="/chat"
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/[0.08] font-bold text-xs sm:text-sm transition"
+              >
+                <Bot className="w-4 h-4 text-purple-400" /> Chat with Peervo AI
+              </Link>
+            </div>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight mb-4">
-            Empower Your Portfolio. <br />
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
-              Collaborate & Showcase Your Work.
-            </span>
-          </h1>
+          {/* Stats Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-6 mt-6 border-t border-white/[0.07] relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <FolderGit2 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-base font-extrabold text-white">50+ Projects</p>
+                <p className="text-[11px] text-slate-400">Student Repositories</p>
+              </div>
+            </div>
 
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed mb-7 max-w-2xl">
-            Explore peer project showcases, share course study notes, and chat in real-time with fellow students and 24/7 AI Assistants.
-          </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-base font-extrabold text-white">Verified Students</p>
+                <p className="text-[11px] text-slate-400">Active Peer Network</p>
+              </div>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {user && (
-              <button
-                onClick={() => setShowProjectModal(true)}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 transition transform hover:-translate-y-0.5"
-              >
-                <Plus className="w-4 h-4" /> Showcase Your Project
-              </button>
-            )}
-
-            <Link
-              to="/chat"
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700/80 font-bold text-sm transition"
-            >
-              <Bot className="w-4 h-4 text-indigo-400" /> Chat with Peervo AI
-            </Link>
+            <div className="hidden sm:flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-base font-extrabold text-white">Cloud Synced</p>
+                <p className="text-[11px] text-slate-400">Real-Time Messaging</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Stats Bar Ticker */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-8 mt-8 border-t border-slate-800/80">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              <FolderGit2 className="w-5 h-5" />
+        {/* Bento Card 2: Categorized Study Notes & Academic Mesh (4 cols) */}
+        <div className="lg:col-span-4 rounded-3xl p-6 sm:p-7 border border-purple-500/20 bg-gradient-to-b from-purple-950/20 via-slate-900/40 to-slate-950/60 backdrop-blur-2xl shadow-2xl flex flex-col justify-between group hover:border-purple-500/40 transition duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 font-semibold">
+                ACADEMIC STUDY NOTES
+              </span>
+              <Link to="/notes" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1">
+                View All <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
-            <div>
-              <p className="text-lg font-extrabold text-white">50+ Showcases</p>
-              <p className="text-[11px] text-slate-400 font-medium">Real Student Work</p>
+
+            <h3 className="text-lg font-black text-white tracking-tight mb-1.5">
+              Categorized Markdown Hub
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed mb-4">
+              Instant access to peer-curated computer science, engineering, and mathematics lecture notes.
+            </p>
+
+            <div className="space-y-2 mb-4">
+              {[
+                { tag: 'CS-401', title: 'Distributed Systems & Consensus', stars: '24' },
+                { tag: 'AI-320', title: 'Deep Learning & Transformer Math', stars: '19' },
+                { tag: 'ECE-210', title: 'Computer Architecture & RISC-V', stars: '15' },
+              ].map((item, idx) => (
+                <Link
+                  key={idx}
+                  to="/notes"
+                  className="p-2.5 rounded-xl bg-slate-950/60 hover:bg-purple-950/30 border border-white/[0.06] hover:border-purple-500/30 transition flex items-center justify-between text-xs group/item"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">
+                      {item.tag}
+                    </span>
+                    <span className="text-slate-200 truncate group-hover/item:text-cyan-300">
+                      {item.title}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-amber-400 font-mono flex items-center gap-0.5 flex-shrink-0">
+                    ★ {item.stars}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-lg font-extrabold text-white">100% Verified</p>
-              <p className="text-[11px] text-slate-400 font-medium">Student Profiles</p>
-            </div>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-lg font-extrabold text-white">Real-Time Chat</p>
-              <p className="text-[11px] text-slate-400 font-medium">Synced Cloud DB</p>
-            </div>
-          </div>
+          <Link
+            to="/upload-note"
+            className="w-full py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-purple-500/30 transition"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Contribute Markdown Note</span>
+          </Link>
         </div>
       </div>
 

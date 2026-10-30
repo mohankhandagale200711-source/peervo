@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { isAdminUser } = require('../config/adminConfig');
 
 const protect = async (req, res, next) => {
   let token;
@@ -30,9 +31,7 @@ const protect = async (req, res, next) => {
 };
 
 const adminOnly = (req, res, next) => {
-  // Allow if user role is 'admin' OR matches owner email 'mohankhandagale200711@gmail.com'
-  const ownerEmail = 'mohankhandagale200711@gmail.com';
-  if (req.user && (req.user.role === 'admin' || req.user.email?.toLowerCase() === ownerEmail)) {
+  if (req.user && isAdminUser(req.user)) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied: Admin privileges required' });

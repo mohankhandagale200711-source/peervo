@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
@@ -7,10 +8,12 @@ const Notification = require('../models/Notification');
 const getOrCreateAiUser = async () => {
   let aiUser = await User.findOne({ email: 'ai@peervo.bot' });
   if (!aiUser) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('ai_bot_protected_password_123', salt);
     aiUser = await User.create({
       name: 'Peervo AI',
       email: 'ai@peervo.bot',
-      password: 'ai_bot_protected_password_123',
+      password: hashedPassword,
       bio: '24/7 AI Assistant powered by Google Gemini & Peervo AI. Ask me anything on coding, science, general knowledge, writing, and math!',
       skills: ['Peervo AI', 'General Knowledge', 'Coding', 'Math', 'Writing'],
       education: 'Peervo AI Engine',
@@ -189,6 +192,18 @@ const fetchMessages = async (req, res) => {
       { chatId, senderId: { $ne: req.user._id }, status: { $ne: 'read' } },
       { $set: { status: 'read' } }
     );
+
+    // Also mark corresponding message notifications as read for current user
+    await Notification.updateMany(
+      { userId: req.user._id, type: 'message', relatedId: chatId, read: false },
+      { $set: { read: true } }
+    );
+
+    // Notify connected socket clients to update badge counts
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.user._id.toString()).emit('notifications_updated');
+    }
 
     res.json(messages);
   } catch (error) {

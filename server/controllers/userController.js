@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Project = require('../models/Project');
 const Note = require('../models/Note');
+const { isAdminUser } = require('../config/adminConfig');
 
 // @desc    Get user profile by ID with projects & notes
 // @route   GET /api/users/:id
@@ -17,6 +18,7 @@ const getUserById = async (req, res) => {
 
     res.json({
       ...user.toObject(),
+      isAdmin: isAdminUser(user),
       projects,
       notes,
     });
@@ -45,8 +47,10 @@ const updateProfile = async (req, res) => {
     if (name) user.name = name;
     if (bio !== undefined) user.bio = bio;
     if (education !== undefined) user.education = education;
-    if (skills) {
-      user.skills = Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim());
+    if (skills !== undefined) {
+      user.skills = Array.isArray(skills)
+        ? skills.map((s) => (typeof s === 'string' ? s.trim() : s)).filter(Boolean)
+        : (typeof skills === 'string' ? skills.split(',').map((s) => s.trim()).filter(Boolean) : []);
     }
 
     if (req.file) {
@@ -58,6 +62,7 @@ const updateProfile = async (req, res) => {
     const updatedUser = await user.save();
     const userObject = updatedUser.toObject();
     delete userObject.password;
+    userObject.isAdmin = isAdminUser(updatedUser);
 
     res.json(userObject);
   } catch (error) {

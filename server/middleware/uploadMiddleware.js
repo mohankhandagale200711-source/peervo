@@ -20,9 +20,15 @@ const localStorage = multer.diskStorage({
 const checkFileTypes = (file, cb) => {
   const filetypes = /jpeg|jpg|png|webp|pdf|doc|docx|ppt|pptx|txt/;
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype) || file.mimetype.includes('pdf') || file.mimetype.includes('document');
+  const mimetype =
+    filetypes.test(file.mimetype) ||
+    file.mimetype.includes('pdf') ||
+    file.mimetype.includes('document') ||
+    file.mimetype.includes('presentation') ||
+    file.mimetype.includes('text') ||
+    file.mimetype.includes('image');
 
-  if (extname || mimetype) {
+  if (extname && mimetype) {
     return cb(null, true);
   } else {
     cb(new Error('Invalid file format. Allowed: Images, PDF, DOC, PPT, TXT'));

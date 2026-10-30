@@ -52,7 +52,7 @@ export const SocketProvider = ({ children }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [user]);
+  }, [user?._id]);
 
   return (
     <SocketContext.Provider value={{ socket, onlineUsers }}>

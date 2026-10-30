@@ -111,8 +111,8 @@ export default function Chat() {
 
   const filteredChats = chats.filter((c) => {
     if (c.isGroup) return c.chatName.toLowerCase().includes(searchQuery.toLowerCase());
-    const other = c.participants.find((p) => p._id !== user._id);
-    return other?.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const other = c.participants.find((p) => p._id?.toString() !== user?._id?.toString());
+    return other?.name?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -160,9 +160,9 @@ export default function Chat() {
             filteredChats.map((chat) => {
               const other = chat.isGroup
                 ? null
-                : chat.participants.find((p) => p._id !== user._id);
-              const isOnline = other ? onlineUsers.includes(other._id) : false;
-              const isActive = activeChat?._id === chat._id;
+                : chat.participants.find((p) => p._id?.toString() !== user?._id?.toString());
+              const isOnline = other ? onlineUsers.some((id) => id?.toString() === other._id?.toString()) : false;
+              const isActive = activeChat?._id?.toString() === chat._id?.toString();
 
               return (
                 <div

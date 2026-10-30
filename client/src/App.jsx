@@ -9,12 +9,15 @@ import SplashScreen from './components/SplashScreen';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Explore from './pages/Explore';
+import Dashboard from './pages/Dashboard';
 import Notes from './pages/Notes';
 import UploadNote from './pages/UploadNote';
 import Bookmarks from './pages/Bookmarks';
 import Profile from './pages/Profile';
 import Chat from './pages/Chat';
 import AdminDashboard from './pages/AdminDashboard';
+
+import { checkIsAdmin } from './utils/admin';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
@@ -27,7 +30,8 @@ const AdminRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div className="p-8 text-center text-slate-400">Loading Peervo...</div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (!user.isAdmin) return <Navigate to="/explore" replace />;
+  const hasAdminAccess = checkIsAdmin(user);
+  if (!hasAdminAccess) return <Navigate to="/explore" replace />;
   return children;
 };
 
@@ -46,7 +50,22 @@ export default function App() {
                 <Navbar />
                 <main className="page-shell flex-1 pb-16 md:pb-0">
                   <Routes>
-                    <Route path="/" element={<Navigate to="/explore" replace />} />
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     

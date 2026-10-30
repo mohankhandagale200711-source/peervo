@@ -62,9 +62,10 @@ const getProjects = async (req, res) => {
 
     let sortOptions = { createdAt: -1 };
     if (sort === 'trending') {
-      // Sort by length of likedBy array descending using aggregate or fetch and sort
+      // Sort by length of likedBy array descending with safety limit
       const projects = await Project.find(query)
         .populate('owner', 'name email profilePic')
+        .limit(200)
         .lean();
       
       projects.sort((a, b) => (b.likedBy ? b.likedBy.length : 0) - (a.likedBy ? a.likedBy.length : 0));
@@ -73,7 +74,8 @@ const getProjects = async (req, res) => {
 
     const projects = await Project.find(query)
       .populate('owner', 'name email profilePic')
-      .sort(sortOptions);
+      .sort(sortOptions)
+      .limit(200);
 
     res.json(projects);
   } catch (error) {

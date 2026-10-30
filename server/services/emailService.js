@@ -1,17 +1,27 @@
 const nodemailer = require('nodemailer');
 
+const getSenderEmail = () => {
+  if (process.env.EMAIL_USER && process.env.EMAIL_USER.trim()) {
+    return process.env.EMAIL_USER.trim();
+  }
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL.trim()) {
+    return process.env.ADMIN_EMAIL.split(',')[0].trim();
+  }
+  return 'mohankhandagale200711@gmail.com';
+};
+
 /**
  * Creates and configures Nodemailer Transporter
  */
 const createTransporter = () => {
-  const emailUser = process.env.EMAIL_USER || process.env.ADMIN_EMAIL || 'mohankhandagale200711@gmail.com';
+  const emailUser = getSenderEmail();
   const emailPass = process.env.EMAIL_PASS || process.env.GMAIL_APP_PASSWORD;
 
   if (emailPass && emailPass.trim()) {
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: emailUser.trim(),
+        user: emailUser,
         pass: emailPass.trim().replace(/\s+/g, ''), // remove accidental spaces in app password
       },
     });
@@ -26,7 +36,7 @@ const createTransporter = () => {
  */
 const sendOtpEmail = async (toEmail, otpCode, userName = 'Student') => {
   const transporter = createTransporter();
-  const senderEmail = process.env.EMAIL_USER || process.env.ADMIN_EMAIL || 'mohankhandagale200711@gmail.com';
+  const senderEmail = getSenderEmail();
 
   const htmlTemplate = `
   <!DOCTYPE html>

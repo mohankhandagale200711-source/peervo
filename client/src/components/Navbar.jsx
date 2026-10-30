@@ -5,6 +5,7 @@ import NotificationBell from './NotificationBell';
 import MockInterviewModal from './MockInterviewModal';
 import { getMediaUrl } from '../utils/urlHelper';
 import {
+  LayoutDashboard,
   Compass,
   FileText,
   Bookmark,
@@ -20,6 +21,8 @@ import {
   BrainCircuit,
 } from 'lucide-react';
 
+import { checkIsAdmin } from '../utils/admin';
+
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const location = useLocation();
@@ -30,8 +33,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  const ownerEmail = 'mohankhandagale200711@gmail.com';
-  const isAdmin = user && (user.role === 'admin' || user.email?.toLowerCase() === ownerEmail);
+  const isAdmin = checkIsAdmin(user);
 
   return (
     <>
@@ -59,6 +61,16 @@ export default function Navbar() {
             {/* Desktop Navigation Links */}
             {user && (
               <div className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-2xl border border-slate-800/80 shadow-inner">
+                <Link
+                  to="/dashboard"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition duration-200 ${
+                    isActive('/') || isActive('/dashboard')
+                      ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/25'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4" /> Dashboard
+                </Link>
                 <Link
                   to="/explore"
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition duration-200 ${
@@ -218,6 +230,16 @@ export default function Navbar() {
                 <p className="font-bold text-white text-sm">{user.name}</p>
                 <p className="text-xs text-slate-400">{user.email}</p>
               </div>
+            </Link>
+
+            <Link
+              to="/dashboard"
+              onClick={closeMobileMenu}
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition ${
+                isActive('/') || isActive('/dashboard') ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-900'
+              }`}
+            >
+              <LayoutDashboard className="w-5 h-5 text-cyan-400" /> Bento Studio Dashboard
             </Link>
 
             <Link

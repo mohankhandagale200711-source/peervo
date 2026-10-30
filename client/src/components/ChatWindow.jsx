@@ -27,9 +27,9 @@ export default function ChatWindow({ activeChat, onBack }) {
 
   const otherUser = activeChat?.isGroup
     ? null
-    : activeChat?.participants?.find((p) => p._id !== user?._id);
+    : activeChat?.participants?.find((p) => p._id?.toString() !== user?._id?.toString());
 
-  const isOtherUserOnline = otherUser ? onlineUsers.includes(otherUser._id) : false;
+  const isOtherUserOnline = otherUser ? onlineUsers.some((id) => id?.toString() === otherUser._id?.toString()) : false;
 
   useEffect(() => {
     if (!activeChat) return;

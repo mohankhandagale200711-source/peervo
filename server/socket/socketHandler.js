@@ -171,6 +171,12 @@ const socketHandler = (io) => {
           chat,
         });
 
+        // Check who is actively inside this chat room
+        const roomSockets = await io.in(chatId.toString()).fetchSockets();
+        const activeUsersInRoom = new Set(
+          roomSockets.map((s) => s.userId?.toString()).filter(Boolean)
+        );
+
         // Also emit directly to each participant's personal room in case chat not open
         chat.participants.forEach((participant) => {
           const participantId = participant._id.toString();
@@ -182,17 +188,21 @@ const socketHandler = (io) => {
             chat,
           });
 
-          // Send notification
-          Notification.create({
-            userId: participantId,
-            type: 'message',
-            fromUser: senderId,
-            itemRef: { itemType: 'chat', itemId: chatId },
-          }).then((notif) => {
-            notif.populate('fromUser', 'name profilePic').then((populated) => {
-              io.to(participantId).emit('notification_received', populated);
-            });
-          });
+          // Only create persistent notification if recipient is NOT actively in the chat room
+          if (!activeUsersInRoom.has(participantId)) {
+            Notification.create({
+              userId: participantId,
+              type: 'message',
+              fromUser: senderId,
+              itemRef: { itemType: 'chat', itemId: chatId },
+            })
+              .then((notif) => {
+                notif.populate('fromUser', 'name profilePic').then((populated) => {
+                  io.to(participantId).emit('notification_received', populated);
+                });
+              })
+              .catch((err) => console.error('Notification error:', err));
+          }
         });
       } catch (err) {
         console.error('Error handling send_message:', err);
@@ -206,6 +216,15 @@ const socketHandler = (io) => {
           { chatId, senderId: { $ne: userId }, status: { $ne: 'read' } },
           { $set: { status: 'read' } }
         );
+
+        // Also mark corresponding chat notifications as read for this user
+        if (userId && chatId) {
+          await Notification.updateMany(
+            { userId, 'itemRef.itemId': chatId, read: false },
+            { $set: { read: true } }
+          );
+          io.to(userId.toString()).emit('notifications_updated');
+        }
 
         io.to(chatId).emit('message_read_update', { chatId, userId });
       } catch (err) {
