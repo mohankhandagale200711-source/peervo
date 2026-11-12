@@ -44,7 +44,6 @@ export default function Dashboard() {
   const [notes, setNotes] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [quickAiPrompt, setQuickAiPrompt] = useState('');
   const [selectedNoteCategory, setSelectedNoteCategory] = useState('All');
 
   useEffect(() => {
@@ -76,12 +75,6 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [user?._id]);
 
-  const handleAiSubmit = (e) => {
-    e.preventDefault();
-    if (!quickAiPrompt.trim()) return;
-    navigate('/chat', { state: { prefillPrompt: quickAiPrompt } });
-  };
-
   const categories = ['All', 'Computer Science', 'Data Structures', 'AI / ML', 'Systems', 'Mathematics'];
 
   const filteredNotes = selectedNoteCategory === 'All'
@@ -104,83 +97,7 @@ export default function Dashboard() {
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10 space-y-6">
 
-        {/* 1. TOP TYPOGRAPHY HEADER & COMMAND BAR */}
-        <header className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-5 rounded-3xl bg-slate-900/40 backdrop-blur-2xl border border-white/[0.07] shadow-2xl shadow-black/60">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-600 p-[1.5px] shadow-lg shadow-cyan-500/20">
-              <div className="w-full h-full bg-[#0b0f19] rounded-[14px] flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-cyan-400" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white font-['Plus_Jakarta_Sans',sans-serif]">
-                  PEERVO <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">BENTO STUDIO</span>
-                </h1>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Mesh Online
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                High-Fidelity Engineering Portfolio & Peer Intelligence Console
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Actions & Student Identity Badge */}
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <form onSubmit={handleAiSubmit} className="relative flex-1 lg:w-80">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                value={quickAiPrompt}
-                onChange={(e) => setQuickAiPrompt(e.target.value)}
-                placeholder="Ask Peervo AI anything..."
-                className="w-full pl-9 pr-12 py-2.5 bg-slate-950/60 border border-white/[0.08] hover:border-cyan-500/40 focus:border-cyan-500 rounded-2xl text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none transition shadow-inner"
-              />
-              <span className="absolute right-2.5 top-2.5 px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-700">
-                ⌘K
-              </span>
-            </form>
-
-            <Link
-              to="/explore"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition transform hover:-translate-y-0.5"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Showcase Work</span>
-            </Link>
-
-            {user && (
-              <Link
-                to={`/profile/${user._id}`}
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] transition"
-              >
-                {user.profilePic ? (
-                  <img
-                    src={getMediaUrl(user.profilePic)}
-                    alt=""
-                    className="w-8 h-8 rounded-xl object-cover border border-cyan-500/30"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-purple-600 flex items-center justify-center font-bold text-xs text-white">
-                    {user.name?.charAt(0) || 'S'}
-                  </div>
-                )}
-                <div className="text-left hidden sm:block">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs font-bold text-white leading-none">{user.name}</span>
-                    <CheckCircle2 className="w-3 h-3 text-cyan-400 fill-cyan-400/20" />
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-medium">Verified Student</span>
-                </div>
-              </Link>
-            )}
-          </div>
-        </header>
-
-        {/* 2. THE BENTO GRID */}
+        {/* BENTO GRID */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
 
           {/* BENTO CARD 1: HERO PORTFOLIO SPOTLIGHT (Spans 8 cols) */}
