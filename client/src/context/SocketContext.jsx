@@ -23,7 +23,7 @@ export const SocketProvider = ({ children }) => {
     const newSocket = io(socketUrl, {
       // Use polling first (works across all firewalls/CDNs), then upgrade to websocket
       transports: ['polling', 'websocket'],
-      withCredentials: false,
+      withCredentials: true,
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -32,7 +32,6 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on('connect', () => {
       console.log('⚡ Socket connected:', newSocket.id);
-      newSocket.emit('setup', user);
     });
 
     newSocket.on('connect_error', (err) => {

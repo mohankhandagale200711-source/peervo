@@ -1,17 +1,18 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { isAdminUser } = require('../config/adminConfig');
+const { COOKIE_NAME, readCookie } = require('../utils/sessionCookie');
 
 const protect = async (req, res, next) => {
-  let token;
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  const token = readCookie(req.headers.cookie, COOKIE_NAME);
+  if (token) {
     try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'peervo_jwt_secret_key_123');
+      // Browsers must send the custom header on protected API requests. With
+      // strict CORS this blocks cross-site form submissions using the session cookie.
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('X-Peervo-Request') !== '1') {
+        return res.status(403).json({ message: 'Request verification failed' });
+      }
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       req.user = await User.findById(decoded.id).select('-password');
       if (!req.user) {

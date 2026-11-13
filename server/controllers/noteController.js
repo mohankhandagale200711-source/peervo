@@ -21,7 +21,7 @@ const createNote = async (req, res) => {
     let fileType = 'pdf';
 
     if (req.file) {
-      fileUrl = `/uploads/${req.file.filename}`;
+      fileUrl = req.file.secure_url || req.file.path || `/uploads/${req.file.filename}`;
       const ext = path.extname(req.file.originalname).toLowerCase();
       if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) fileType = 'image';
       else if (['.doc', '.docx', '.ppt', '.pptx', '.txt'].includes(ext)) fileType = 'doc';

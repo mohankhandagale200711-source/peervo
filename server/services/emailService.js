@@ -4,10 +4,7 @@ const getSenderEmail = () => {
   if (process.env.EMAIL_USER && process.env.EMAIL_USER.trim()) {
     return process.env.EMAIL_USER.trim();
   }
-  if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL.trim()) {
-    return process.env.ADMIN_EMAIL.split(',')[0].trim();
-  }
-  return 'mohankhandagale200711@gmail.com';
+  return '';
 };
 
 /**
@@ -17,7 +14,7 @@ const createTransporter = () => {
   const emailUser = getSenderEmail();
   const emailPass = process.env.EMAIL_PASS || process.env.GMAIL_APP_PASSWORD;
 
-  if (emailPass && emailPass.trim()) {
+  if (emailUser && emailPass && emailPass.trim()) {
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -96,11 +93,9 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Student') => {
   `;
 
   if (!transporter) {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📨 [EMAIL SIMULATION] Verification OTP for ${toEmail}:`);
-    console.log(`👉 CODE: [ ${otpCode} ] (Valid for 10 minutes)`);
-    console.log('💡 Note: Set EMAIL_PASS in Render Environment to deliver live Gmail emails.');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📨 [EMAIL SIMULATION] Verification OTP for ${toEmail}: ${otpCode}`);
+    }
     return { success: true, simulated: true, otpCode };
   }
 
@@ -117,8 +112,9 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Student') => {
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error(`❌ Failed to send verification email to ${toEmail}:`, error.message);
-    // Fallback: log code so development and registration never get blocked
-    console.log(`👉 FALLBACK CODE: [ ${otpCode} ] for ${toEmail}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📨 [EMAIL DELIVERY FAILED] Development OTP for ${toEmail}: ${otpCode}`);
+    }
     return { success: false, error: error.message, fallbackCode: otpCode };
   }
 };

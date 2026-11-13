@@ -3,19 +3,20 @@ const router = express.Router();
 const {
   sendOtp,
   verifyOtpAndRegister,
-  registerUser,
   loginUser,
+  logoutUser,
   getMe,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
+const { requirePeervoRequest } = require('../middleware/requestHeaderMiddleware');
 
 // OTP Verification Endpoints (2-Step Email Verification)
-router.post('/send-otp', sendOtp);
-router.post('/verify-otp-and-register', verifyOtpAndRegister);
+router.post('/send-otp', requirePeervoRequest, sendOtp);
+router.post('/verify-otp-and-register', requirePeervoRequest, verifyOtpAndRegister);
 
-// Direct Authentication Endpoints
-router.post('/register', registerUser);
-router.post('/login', loginUser);
+// Authentication Endpoints
+router.post('/login', requirePeervoRequest, loginUser);
+router.post('/logout', requirePeervoRequest, logoutUser);
 router.get('/me', protect, getMe);
 
 module.exports = router;

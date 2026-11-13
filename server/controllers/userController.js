@@ -54,7 +54,7 @@ const updateProfile = async (req, res) => {
     }
 
     if (req.file) {
-      user.profilePic = `/uploads/${req.file.filename}`;
+      user.profilePic = req.file.secure_url || req.file.path || `/uploads/${req.file.filename}`;
     } else if (req.body.profilePic) {
       user.profilePic = req.body.profilePic;
     }

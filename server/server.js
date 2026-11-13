@@ -7,6 +7,13 @@ const { Server } = require('socket.io');
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be configured with at least 32 characters before starting Peervo.');
+}
+if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL) {
+  throw new Error('CLIENT_URL must list the exact production frontend origin before starting Peervo.');
+}
+
 const connectDB = require('./config/db');
 const socketHandler = require('./socket/socketHandler');
 
@@ -22,50 +29,58 @@ const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const server = http.createServer(app);
+app.set('trust proxy', 1);
 
 // Connect Database
 connectDB();
 
-// Allow all origins for production cross-domain compatibility
+// CORS is an allow-list. Configure CLIENT_URL as comma-separated exact origins.
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'https://peervo-c51g.vercel.app',
-  'https://peervo-1.vercel.app',
-  process.env.CLIENT_URL,
+  ...(process.env.NODE_ENV === 'production' ? [] : ['http://localhost:5173', 'http://localhost:5174']),
+  ...(process.env.CLIENT_URL || '').split(',').map((origin) => origin.trim()),
 ].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(null, true); // Allow all for now
+    const error = new Error('Origin is not allowed by CORS');
+    error.statusCode = 403;
+    return callback(error);
   },
-  credentials: false,
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'X-Peervo-Request'],
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Static Folder for File Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Attach Socket.IO with permissive CORS
+// Attach Socket.IO with the same exact-origin allow-list as the API.
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
-    credentials: false,
+    credentials: true,
   },
   transports: ['polling', 'websocket'],
   allowEIO3: true,
+});
+
+// WebSocket upgrades do not enforce browser CORS the way fetch does, so check
+// Origin explicitly before the authenticated socket handler runs.
+io.use((socket, next) => {
+  const origin = socket.handshake.headers.origin;
+  if (!origin || allowedOrigins.includes(origin)) return next();
+  return next(new Error('Origin is not allowed'));
 });
 
 app.set('io', io);
@@ -88,7 +103,8 @@ app.get('/', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: err.message || 'Server Error' });
+  const status = err.statusCode || (err.name === 'MulterError' ? (err.code === 'LIMIT_FILE_SIZE' ? 413 : 400) : 500);
+  res.status(status).json({ message: status >= 500 ? 'Server Error' : err.message });
 });
 
 const PORT = process.env.PORT || 5000;

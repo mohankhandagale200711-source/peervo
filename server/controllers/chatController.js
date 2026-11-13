@@ -218,14 +218,19 @@ const sendMessage = async (req, res) => {
   try {
     const { chatId, text } = req.body;
 
-    if (!chatId || !text) {
+    if (!chatId || typeof text !== 'string' || !text.trim() || text.length > 10000) {
       return res.status(400).json({ message: 'Chat ID and text are required' });
     }
+
+    const chatRecord = await Chat.findById(chatId);
+    if (!chatRecord) return res.status(404).json({ message: 'Chat not found' });
+    const isParticipant = chatRecord.participants.some((participant) => participant.toString() === req.user._id.toString());
+    if (!isParticipant) return res.status(403).json({ message: 'Not authorized to send messages in this chat' });
 
     let message = await Message.create({
       chatId,
       senderId: req.user._id,
-      text,
+      text: text.trim(),
       status: 'sent',
     });
 

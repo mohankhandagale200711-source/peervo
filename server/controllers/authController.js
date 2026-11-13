@@ -4,9 +4,24 @@ const User = require('../models/User');
 const Otp = require('../models/Otp');
 const { sendOtpEmail } = require('../services/emailService');
 const { isAdminUser } = require('../config/adminConfig'); // BUG-21: single source of truth
+const { randomInt } = require('crypto');
+const { setSessionCookie, clearSessionCookie } = require('../utils/sessionCookie');
+
+const authRateLimits = new Map();
+const consumeRateLimit = (store, key, limit, windowMs) => {
+  const now = Date.now();
+  const recent = (store.get(key) || []).filter((timestamp) => now - timestamp < windowMs);
+  if (recent.length >= limit) {
+    store.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  store.set(key, recent);
+  return true;
+};
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'peervo_jwt_secret_key_123', {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
@@ -30,6 +45,11 @@ const sendOtp = async (req, res) => {
       return res.status(400).json({ message: 'Please enter a valid email address' });
     }
 
+    const rateKey = `${req.ip}:${cleanEmail}`;
+    if (!consumeRateLimit(authRateLimits, `send:${rateKey}`, 3, 10 * 60 * 1000)) {
+      return res.status(429).json({ message: 'Too many verification requests. Please wait before trying again.' });
+    }
+
     // Check if user already exists
     const userExists = await User.findOne({ email: cleanEmail });
     if (userExists) {
@@ -37,7 +57,7 @@ const sendOtp = async (req, res) => {
     }
 
     // Generate secure 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = randomInt(100000, 1000000).toString();
 
     // Delete any previous pending OTPs for this email and save the new one
     await Otp.deleteMany({ email: cleanEmail });
@@ -56,14 +76,15 @@ const sendOtp = async (req, res) => {
       });
     }
 
-    // In simulation mode or if SMTP failed, return code so testing/registration is never blocked
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(503).json({ message: 'Email verification is temporarily unavailable. Please try again later.' });
+    }
+
     return res.status(200).json({
       success: true,
-      message: emailResult.simulated
-        ? `Verification code generated: ${otpCode} (Email service is in simulation mode)`
-        : `Email delivery issue (${emailResult.error || 'SMTP Error'}). Use verification code: ${otpCode}`,
+      message: `Development verification code: ${otpCode}`,
       devCode: otpCode,
-      simulated: Boolean(emailResult.simulated),
+      simulated: true,
     });
   } catch (error) {
     console.error('Error in sendOtp:', error);
@@ -85,9 +106,17 @@ const verifyOtpAndRegister = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanOtp = otp.toString().trim();
 
+    if (!consumeRateLimit(authRateLimits, `verify:${req.ip}:${cleanEmail}`, 10, 10 * 60 * 1000)) {
+      return res.status(429).json({ message: 'Too many incorrect verification attempts. Request a new code later.' });
+    }
+
     // BUG-04: OTP expiry is handled by MongoDB TTL index on the Otp model (expires: 600s).
     // The findOne will return null if the document has been auto-deleted after 10 minutes.
-    const otpRecord = await Otp.findOne({ email: cleanEmail, otp: cleanOtp });
+    const otpRecord = await Otp.findOne({
+      email: cleanEmail,
+      otp: cleanOtp,
+      createdAt: { $gt: new Date(Date.now() - 10 * 60 * 1000) },
+    });
     if (!otpRecord) {
       return res.status(400).json({ message: 'Invalid or expired verification code. Please request a new one.' });
     }
@@ -116,6 +145,7 @@ const verifyOtpAndRegister = async (req, res) => {
     await Otp.deleteMany({ email: cleanEmail });
 
     if (user) {
+      setSessionCookie(res, generateToken(user._id));
       res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -125,7 +155,6 @@ const verifyOtpAndRegister = async (req, res) => {
         education: user.education,
         profilePic: user.profilePic,
         isAdmin: isAdminUser(user),
-        token: generateToken(user._id),
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -136,57 +165,7 @@ const verifyOtpAndRegister = async (req, res) => {
   }
 };
 
-// @desc    Direct Register (Legacy/Fallback)
-// @route   POST /api/auth/register
-// @access  Public
-const registerUser = async (req, res) => {
-  try {
-    const { name, email, password, bio, skills, education } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Please provide name, email, and password' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const userExists = await User.findOne({ email: cleanEmail });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists with this email' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = await User.create({
-      name: name.trim(),
-      email: cleanEmail,
-      password: hashedPassword,
-      bio: bio || '',
-      // BUG-09: added .filter(Boolean) to remove empty strings from trailing commas
-      skills: Array.isArray(skills) ? skills : (skills ? skills.split(',').map((s) => s.trim()).filter(Boolean) : []),
-      education: education || '',
-    });
-
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        bio: user.bio,
-        skills: user.skills,
-        education: user.education,
-        profilePic: user.profilePic,
-        isAdmin: isAdminUser(user),
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Authenticate user & get token
+// @desc    Authenticate user & create an HttpOnly session
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
@@ -198,9 +177,13 @@ const loginUser = async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    if (!consumeRateLimit(authRateLimits, `login:${req.ip}:${cleanEmail}`, 10, 15 * 60 * 1000)) {
+      return res.status(429).json({ message: 'Too many sign-in attempts. Please wait before trying again.' });
+    }
     const user = await User.findOne({ email: cleanEmail });
 
     if (user && (await bcrypt.compare(password, user.password))) {
+      setSessionCookie(res, generateToken(user._id));
       res.json({
         _id: user._id,
         name: user.name,
@@ -210,7 +193,6 @@ const loginUser = async (req, res) => {
         education: user.education,
         profilePic: user.profilePic,
         isAdmin: isAdminUser(user),
-        token: generateToken(user._id),
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -218,6 +200,11 @@ const loginUser = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+const logoutUser = (req, res) => {
+  clearSessionCookie(res);
+  res.json({ message: 'Signed out' });
 };
 
 // @desc    Get user profile (Current logged in user)
@@ -235,7 +222,7 @@ const getMe = async (req, res) => {
 module.exports = {
   sendOtp,
   verifyOtpAndRegister,
-  registerUser,
   loginUser,
+  logoutUser,
   getMe,
 };

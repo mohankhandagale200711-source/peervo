@@ -21,6 +21,8 @@ export default function VideoCallModal({ activeChat, isOpen, onClose }) {
   const myVideoRef = useRef(null);
   const userVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
+  const callChatIdRef = useRef(null);
+  const remoteUserIdRef = useRef(null);
 
   const otherUser = activeChat?.isGroup
     ? null
@@ -43,6 +45,8 @@ export default function VideoCallModal({ activeChat, isOpen, onClose }) {
       setCaller(data.from);
       setCallerName(data.name);
       setCallerSignal(data.signal);
+      callChatIdRef.current = data.chatId;
+      remoteUserIdRef.current = data.from;
     });
 
     // Listen for call accepted
@@ -98,6 +102,8 @@ export default function VideoCallModal({ activeChat, isOpen, onClose }) {
   // Initiate Call
   const callStudent = async () => {
     if (!otherUser || !socket) return;
+    callChatIdRef.current = activeChat._id;
+    remoteUserIdRef.current = otherUser._id;
 
     const mediaStream = await startLocalStream();
     const peer = new RTCPeerConnection(rtcConfig);
@@ -121,6 +127,7 @@ export default function VideoCallModal({ activeChat, isOpen, onClose }) {
         socket.emit('ice_candidate', {
           to: otherUser._id,
           candidate: event.candidate,
+          chatId: callChatIdRef.current,
         });
       }
     };
@@ -162,6 +169,7 @@ export default function VideoCallModal({ activeChat, isOpen, onClose }) {
         socket.emit('ice_candidate', {
           to: caller,
           candidate: event.candidate,
+          chatId: callChatIdRef.current,
         });
       }
     };
@@ -171,7 +179,7 @@ export default function VideoCallModal({ activeChat, isOpen, onClose }) {
       const answer = await peer.createAnswer();
       await peer.setLocalDescription(answer);
 
-      socket.emit('answer_call', { to: caller, signal: answer });
+      socket.emit('answer_call', { to: caller, signal: answer, chatId: callChatIdRef.current });
     }
   };
 
@@ -232,7 +240,7 @@ export default function VideoCallModal({ activeChat, isOpen, onClose }) {
   const leaveCall = () => {
     setCallEnded(true);
     if (socket && otherUser) {
-      socket.emit('end_call', { to: otherUser._id, chatId: activeChat?._id });
+      socket.emit('end_call', { to: remoteUserIdRef.current, chatId: callChatIdRef.current });
     }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();

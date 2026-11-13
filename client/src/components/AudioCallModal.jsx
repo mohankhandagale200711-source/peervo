@@ -19,6 +19,8 @@ export default function AudioCallModal({ activeChat, isOpen, onClose }) {
 
   const remoteAudioRef = useRef(null);
   const peerConnectionRef = useRef(null);
+  const callChatIdRef = useRef(null);
+  const remoteUserIdRef = useRef(null);
 
   const otherUser = activeChat?.isGroup
     ? null
@@ -39,6 +41,8 @@ export default function AudioCallModal({ activeChat, isOpen, onClose }) {
       setCaller(data.from);
       setCallerName(data.name);
       setCallerSignal(data.signal);
+      callChatIdRef.current = data.chatId;
+      remoteUserIdRef.current = data.from;
     });
 
     socket.on('call_accepted_audio', async (signal) => {
@@ -86,6 +90,8 @@ export default function AudioCallModal({ activeChat, isOpen, onClose }) {
 
   const callStudentAudio = async () => {
     if (!otherUser || !socket) return;
+    callChatIdRef.current = activeChat._id;
+    remoteUserIdRef.current = otherUser._id;
 
     const mediaStream = await startLocalAudioStream();
     const peer = new RTCPeerConnection(rtcConfig);
@@ -106,6 +112,7 @@ export default function AudioCallModal({ activeChat, isOpen, onClose }) {
         socket.emit('ice_candidate_audio', {
           to: otherUser._id,
           candidate: event.candidate,
+          chatId: callChatIdRef.current,
         });
       }
     };
@@ -145,6 +152,7 @@ export default function AudioCallModal({ activeChat, isOpen, onClose }) {
         socket.emit('ice_candidate_audio', {
           to: caller,
           candidate: event.candidate,
+          chatId: callChatIdRef.current,
         });
       }
     };
@@ -154,7 +162,7 @@ export default function AudioCallModal({ activeChat, isOpen, onClose }) {
       const answer = await peer.createAnswer();
       await peer.setLocalDescription(answer);
 
-      socket.emit('answer_call_audio', { to: caller, signal: answer });
+      socket.emit('answer_call_audio', { to: caller, signal: answer, chatId: callChatIdRef.current });
     }
   };
 
@@ -175,7 +183,7 @@ export default function AudioCallModal({ activeChat, isOpen, onClose }) {
   const leaveCall = () => {
     setCallEnded(true);
     if (socket && otherUser) {
-      socket.emit('end_call_audio', { to: otherUser._id, chatId: activeChat?._id });
+      socket.emit('end_call_audio', { to: remoteUserIdRef.current, chatId: callChatIdRef.current });
     }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();

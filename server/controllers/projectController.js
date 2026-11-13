@@ -14,7 +14,7 @@ const createProject = async (req, res) => {
 
     let screenshotUrl = '';
     if (req.file) {
-      screenshotUrl = `/uploads/${req.file.filename}`;
+      screenshotUrl = req.file.secure_url || req.file.path || `/uploads/${req.file.filename}`;
     } else if (req.body.screenshot) {
       screenshotUrl = req.body.screenshot;
     }
@@ -130,7 +130,7 @@ const updateProject = async (req, res) => {
     }
 
     if (req.file) {
-      project.screenshot = `/uploads/${req.file.filename}`;
+      project.screenshot = req.file.secure_url || req.file.path || `/uploads/${req.file.filename}`;
     }
 
     const updatedProject = await project.save();

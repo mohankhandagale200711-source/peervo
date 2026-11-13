@@ -39,6 +39,19 @@ User → Register/Login → Build Profile → Add Projects → Upload/Browse Cou
 
 ## Getting Started Locally
 
+### Configure the Backend
+Create `server/.env` before starting the backend. At minimum, set:
+
+```env
+MONGO_URI=mongodb://127.0.0.1:27017/peervo
+JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
+CLIENT_URL=http://localhost:5173
+```
+
+Set `EMAIL_USER` and `EMAIL_PASS` to enable registration verification emails. In local development only, if email is not configured, the OTP is shown by the development app. Production never returns or logs OTP codes and requires email delivery to succeed.
+
+For production, set `CLIENT_URL` to the exact frontend origin (or comma-separated exact origins), and configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` for persistent uploads. Production startup intentionally fails when the JWT secret or Cloudinary storage configuration is missing. Grant admin access only by explicitly setting a user's `role` to `admin` in the database; email addresses never grant privileges.
+
 ### 1. Backend Server Setup
 ```bash
 cd server
@@ -46,6 +59,10 @@ npm install
 npm run dev
 ```
 The server will run at `http://localhost:5000`.
+
+Authentication uses an HttpOnly session cookie. For production, serve the frontend and API over HTTPS and set `CLIENT_URL` to the exact frontend origin so the browser can send the cookie.
+
+After upgrading from the old localStorage-token login, users must sign in again. If the frontend and API are hosted on different sites, the session cookie uses `SameSite=None; Secure`; browsers that block third-party cookies may require hosting both on the same site or proxying `/api` and Socket.IO through the frontend domain.
 
 ### 2. Frontend Client Setup
 ```bash

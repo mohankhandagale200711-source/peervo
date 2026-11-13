@@ -2,17 +2,8 @@ import axios from 'axios';
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-});
-
-// Request interceptor to attach JWT authorization header
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
+  withCredentials: true,
+  headers: { 'X-Peervo-Request': '1' },
 });
 
 export default API;

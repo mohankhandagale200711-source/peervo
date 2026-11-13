@@ -1,241 +1,207 @@
+const jwt = require('jsonwebtoken');
 const Message = require('../models/Message');
 const Chat = require('../models/Chat');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { getAiAnswer } = require('../services/aiKnowledgeEngine');
+const { COOKIE_NAME, readCookie } = require('../utils/sessionCookie');
 
-let onlineUsers = new Map(); // userId -> socketId
+const onlineUsers = new Map(); // userId -> Set(socketId)
 
 const socketHandler = (io) => {
+  io.use(async (socket, next) => {
+    try {
+      const token = readCookie(socket.handshake.headers.cookie, COOKIE_NAME);
+      if (!token) return next(new Error('Authentication required'));
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id).select('_id name email');
+      if (!user) return next(new Error('Authentication required'));
+
+      socket.user = user;
+      socket.userId = user._id.toString();
+      next();
+    } catch {
+      next(new Error('Authentication required'));
+    }
+  });
+
   io.on('connection', (socket) => {
-    console.log(`⚡ Socket connected: ${socket.id}`);
+    const userId = socket.userId;
+    socket.join(userId);
 
-    // Setup user connection & emit online status
-    socket.on('setup', (userData) => {
-      if (userData && userData._id) {
-        socket.userId = userData._id;
-        socket.join(userData._id);
-        onlineUsers.set(userData._id.toString(), socket.id);
-        
-        io.emit('online_users', Array.from(onlineUsers.keys()));
+    const userSockets = onlineUsers.get(userId) || new Set();
+    userSockets.add(socket.id);
+    onlineUsers.set(userId, userSockets);
+    io.emit('online_users', Array.from(onlineUsers.keys()));
+
+    const getChatForUser = async (chatId) => {
+      try {
+        if (!chatId) return null;
+        const chat = await Chat.findById(chatId);
+        if (!chat || !chat.participants.some((participant) => participant.toString() === userId)) return null;
+        return chat;
+      } catch {
+        return null;
+      }
+    };
+
+    const relayCall = async (payload, event, audio = false) => {
+      const { chatId, to, userToCall, signalData, signal, candidate } = payload || {};
+      const targetId = (to || userToCall || '').toString();
+      const chat = await getChatForUser(chatId);
+      if (!chat || !chat.participants.some((participant) => participant.toString() === targetId)) return;
+
+      let eventName = event;
+      let data;
+      if (event === 'call_user' || event === 'call_user_audio') {
+        eventName = audio ? 'call_incoming_audio' : 'call_incoming';
+        data = { signal: signalData, from: userId, name: socket.user.name, chatId };
+      } else if (event === 'answer_call' || event === 'answer_call_audio') {
+        eventName = audio ? 'call_accepted_audio' : 'call_accepted';
+        data = signal;
+      } else if (event === 'ice_candidate' || event === 'ice_candidate_audio') {
+        data = candidate;
+      } else {
+        eventName = audio ? 'call_ended_audio' : 'call_ended';
+        data = { chatId };
+      }
+      io.to(targetId).emit(eventName, data);
+    };
+
+    socket.on('join_chat', async (chatId) => {
+      try {
+        if (await getChatForUser(chatId)) socket.join(chatId.toString());
+      } catch (err) {
+        console.error('Socket join_chat failed:', err.message);
       }
     });
 
-    // Join specific Chat Room
-    socket.on('join_chat', (room) => {
-      socket.join(room);
+    socket.on('typing', async (chatId) => {
+      if (await getChatForUser(chatId)) socket.to(chatId.toString()).emit('typing', chatId.toString());
+    });
+    socket.on('stop_typing', async (chatId) => {
+      if (await getChatForUser(chatId)) socket.to(chatId.toString()).emit('stop_typing', chatId.toString());
     });
 
-    // Handle typing indicators
-    socket.on('typing', (room) => socket.in(room).emit('typing', room));
-    socket.on('stop_typing', (room) => socket.in(room).emit('stop_typing', room));
+    socket.on('call_user', (payload) => relayCall(payload, 'call_user').catch(() => {}));
+    socket.on('answer_call', (payload) => relayCall(payload, 'answer_call').catch(() => {}));
+    socket.on('ice_candidate', (payload) => relayCall(payload, 'ice_candidate').catch(() => {}));
+    socket.on('end_call', (payload) => relayCall(payload, 'end_call').catch(() => {}));
+    socket.on('call_user_audio', (payload) => relayCall(payload, 'call_user_audio', true).catch(() => {}));
+    socket.on('answer_call_audio', (payload) => relayCall(payload, 'answer_call_audio', true).catch(() => {}));
+    socket.on('ice_candidate_audio', (payload) => relayCall(payload, 'ice_candidate_audio', true).catch(() => {}));
+    socket.on('end_call_audio', (payload) => relayCall(payload, 'end_call_audio', true).catch(() => {}));
 
-    // --- WebRTC Live Video Call Signaling ---
-    socket.on('call_user', ({ userToCall, signalData, from, name, chatId }) => {
-      io.to(userToCall).emit('call_incoming', {
-        signal: signalData,
-        from,
-        name,
-        chatId,
-      });
+    socket.on('code_change', async (payload = {}) => {
+      const { chatId, code, language } = payload || {};
+      if (await getChatForUser(chatId)) {
+        socket.to(chatId.toString()).emit('code_sync', { code, language, senderId: userId });
+      }
     });
-
-    socket.on('answer_call', ({ to, signal }) => {
-      io.to(to).emit('call_accepted', signal);
+    socket.on('code_run', async (payload = {}) => {
+      const { chatId, output, code, language } = payload || {};
+      if (await getChatForUser(chatId)) {
+        socket.to(chatId.toString()).emit('code_run_sync', { output, code, language, senderId: userId });
+      }
     });
-
-    socket.on('ice_candidate', ({ to, candidate }) => {
-      io.to(to).emit('ice_candidate', candidate);
+    socket.on('whiteboard_draw', async (payload = {}) => {
+      const data = payload || {};
+      if (await getChatForUser(data.chatId)) {
+        socket.to(data.chatId.toString()).emit('whiteboard_draw', { ...data, senderId: userId });
+      }
     });
-
-    socket.on('end_call', ({ to, chatId }) => {
-      if (to) io.to(to).emit('call_ended', { chatId });
-      if (chatId) socket.in(chatId).emit('call_ended', { chatId });
-    });
-
-    // --- WebRTC Live Audio Call Signaling ---
-    socket.on('call_user_audio', ({ userToCall, signalData, from, name, chatId }) => {
-      io.to(userToCall).emit('call_incoming_audio', {
-        signal: signalData,
-        from,
-        name,
-        chatId,
-      });
-    });
-
-    socket.on('answer_call_audio', ({ to, signal }) => {
-      io.to(to).emit('call_accepted_audio', signal);
-    });
-
-    socket.on('ice_candidate_audio', ({ to, candidate }) => {
-      io.to(to).emit('ice_candidate_audio', candidate);
-    });
-
-    socket.on('end_call_audio', ({ to, chatId }) => {
-      if (to) io.to(to).emit('call_ended_audio', { chatId });
-      if (chatId) socket.in(chatId).emit('call_ended_audio', { chatId });
-    });
-
-    // --- Collaborative Code Playground Real-Time Sync ---
-    socket.on('code_change', ({ chatId, code, language, senderId }) => {
-      socket.in(chatId).emit('code_sync', { code, language, senderId });
-    });
-
-    socket.on('code_run', ({ chatId, output, code, language, senderId }) => {
-      socket.in(chatId).emit('code_run_sync', { output, code, language, senderId });
-    });
-
-    // --- Collaborative Real-Time Whiteboard Sync ---
-    socket.on('whiteboard_draw', (data) => {
-      if (data.chatId) {
-        socket.in(data.chatId).emit('whiteboard_draw', data);
+    socket.on('whiteboard_clear', async (payload = {}) => {
+      const data = payload || {};
+      if (await getChatForUser(data.chatId)) {
+        socket.to(data.chatId.toString()).emit('whiteboard_clear', { chatId: data.chatId, senderId: userId });
       }
     });
 
-    socket.on('whiteboard_clear', (data) => {
-      if (data.chatId) {
-        socket.in(data.chatId).emit('whiteboard_clear', data);
-      }
-    });
-
-    // Real-time Send Message
-    socket.on('send_message', async (newMessageData) => {
-      const { chatId, senderId, text } = newMessageData;
-      if (!chatId || !senderId || !text) return;
-
+    socket.on('send_message', async (payload = {}) => {
+      const { chatId, text } = payload || {};
+      if (typeof text !== 'string' || !text.trim() || text.length > 10000) return;
       try {
         const chat = await Chat.findById(chatId).populate('participants');
-        if (!chat) return;
+        if (!chat || !chat.participants.some((participant) => participant._id.toString() === userId)) return;
 
         let message = await Message.create({
           chatId,
-          senderId,
-          text,
+          senderId: userId,
+          text: text.trim(),
           status: 'delivered',
         });
-
         message = await message.populate('senderId', 'name profilePic email');
-
         await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id });
-
-        // Send back created message to sender
         socket.emit('message_sent', message);
 
-        // Check if message is sent to Peervo AI Assistant
-        const aiParticipant = chat.participants.find((p) => p.email === 'ai@peervo.bot');
-
-        if (aiParticipant && senderId.toString() !== aiParticipant._id.toString()) {
-          // Trigger AI typing status
-          io.to(senderId.toString()).emit('typing', chatId);
-
-          // Get Peervo AI response asynchronously
-          const aiReplyText = await getAiAnswer(text);
-
-          // Create AI response message
+        const aiParticipant = chat.participants.find((participant) => participant.email === 'ai@peervo.bot');
+        if (aiParticipant) {
+          io.to(userId).emit('typing', chatId.toString());
+          const aiReplyText = await getAiAnswer(text.trim());
           let aiMessage = await Message.create({
             chatId,
             senderId: aiParticipant._id,
             text: aiReplyText,
             status: 'read',
           });
-
           aiMessage = await aiMessage.populate('senderId', 'name profilePic email');
           await Chat.findByIdAndUpdate(chatId, { lastMessage: aiMessage._id });
-
-          // Stop AI typing status
-          io.to(chatId.toString()).emit('stop_typing', chatId);
-          io.to(senderId.toString()).emit('stop_typing', chatId);
-          socket.emit('stop_typing', chatId);
-
-          // Emit Gemini AI message to entire chat room and sender
-          io.to(chatId.toString()).emit('receive_message', {
-            message: aiMessage,
-            chat,
-          });
-          io.to(senderId.toString()).emit('receive_message', {
-            message: aiMessage,
-            chat,
-          });
-          socket.emit('receive_message', {
-            message: aiMessage,
-            chat,
-          });
-
+          io.to(userId).emit('stop_typing', chatId.toString());
+          io.to(chatId.toString()).emit('stop_typing', chatId.toString());
+          io.to(chatId.toString()).emit('receive_message', { message: aiMessage, chat });
+          io.to(userId).emit('receive_message', { message: aiMessage, chat });
           return;
         }
 
-        // Broadcast message to entire chat room (sender + all participants)
-        // Using io.to(chatId) is the most reliable cross-domain delivery method
-        io.to(chatId.toString()).emit('receive_message', {
-          message,
-          chat,
-        });
-
-        // Check who is actively inside this chat room
+        io.to(chatId.toString()).emit('receive_message', { message, chat });
         const roomSockets = await io.in(chatId.toString()).fetchSockets();
-        const activeUsersInRoom = new Set(
-          roomSockets.map((s) => s.userId?.toString()).filter(Boolean)
-        );
-
-        // Also emit directly to each participant's personal room in case chat not open
-        chat.participants.forEach((participant) => {
+        const activeUsers = new Set(roomSockets.map((connected) => connected.userId));
+        for (const participant of chat.participants) {
           const participantId = participant._id.toString();
-          if (participantId === senderId.toString()) return;
+          if (participantId === userId) continue;
 
-          // Emit to participant's personal socket room
-          io.to(participantId).emit('receive_message', {
-            message,
-            chat,
-          });
-
-          // Only create persistent notification if recipient is NOT actively in the chat room
-          if (!activeUsersInRoom.has(participantId)) {
-            Notification.create({
+          io.to(participantId).emit('receive_message', { message, chat });
+          if (!activeUsers.has(participantId)) {
+            const notification = await Notification.create({
               userId: participantId,
               type: 'message',
-              fromUser: senderId,
+              fromUser: userId,
               itemRef: { itemType: 'chat', itemId: chatId },
-            })
-              .then((notif) => {
-                notif.populate('fromUser', 'name profilePic').then((populated) => {
-                  io.to(participantId).emit('notification_received', populated);
-                });
-              })
-              .catch((err) => console.error('Notification error:', err));
+            });
+            const populated = await Notification.findById(notification._id).populate('fromUser', 'name profilePic');
+            io.to(participantId).emit('notification_received', populated);
           }
-        });
+        }
       } catch (err) {
-        console.error('Error handling send_message:', err);
+        console.error('Error handling send_message:', err.message);
       }
     });
 
-    // Mark messages as read
-    socket.on('mark_message_read', async ({ chatId, userId }) => {
+    socket.on('mark_message_read', async (payload = {}) => {
+      const { chatId } = payload || {};
       try {
+        if (!(await getChatForUser(chatId))) return;
         await Message.updateMany(
           { chatId, senderId: { $ne: userId }, status: { $ne: 'read' } },
           { $set: { status: 'read' } }
         );
-
-        // Also mark corresponding chat notifications as read for this user
-        if (userId && chatId) {
-          await Notification.updateMany(
-            { userId, 'itemRef.itemId': chatId, read: false },
-            { $set: { read: true } }
-          );
-          io.to(userId.toString()).emit('notifications_updated');
-        }
-
-        io.to(chatId).emit('message_read_update', { chatId, userId });
+        await Notification.updateMany(
+          { userId, 'itemRef.itemId': chatId, read: false },
+          { $set: { read: true } }
+        );
+        io.to(userId).emit('notifications_updated');
+        io.to(chatId.toString()).emit('message_read_update', { chatId, userId });
       } catch (err) {
-        console.error('Error marking messages read:', err);
+        console.error('Error marking messages read:', err.message);
       }
     });
 
-    // Handle Disconnect
     socket.on('disconnect', () => {
-      if (socket.userId) {
-        onlineUsers.delete(socket.userId.toString());
+      const sockets = onlineUsers.get(userId);
+      if (sockets) {
+        sockets.delete(socket.id);
+        if (sockets.size === 0) onlineUsers.delete(userId);
         io.emit('online_users', Array.from(onlineUsers.keys()));
       }
     });
