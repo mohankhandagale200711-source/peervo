@@ -20,7 +20,10 @@ export default function Login() {
       navigate('/dashboard');
     } catch (err) {
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        setError('Cannot connect to backend server. Make sure "npm run dev" is running in your terminal!');
+        const isLocalDevelopment = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        setError(isLocalDevelopment
+          ? 'Cannot connect to the backend. Make sure "npm run dev" is running in your terminal.'
+          : 'Peervo cannot reach the login service right now. Please try again shortly.');
       } else {
         setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
       }
