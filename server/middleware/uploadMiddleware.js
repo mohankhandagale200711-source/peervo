@@ -32,7 +32,8 @@ if (cloudinaryConfigured) {
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
 } else if (process.env.NODE_ENV === 'production') {
-  throw new Error('Configure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET for persistent production uploads.');
+  // Keep the API available without Cloudinary. Uploads are rejected explicitly
+  // below until persistent production storage is configured.
 } else if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -77,6 +78,11 @@ const isUtf8TextFile = async (filePath) => {
 
 const storage = {
   _handleFile(req, file, callback) {
+    if (process.env.NODE_ENV === 'production' && !cloudinaryConfigured) {
+      const error = new Error('File uploads are temporarily unavailable until production storage is configured.');
+      error.statusCode = 503;
+      return callback(error);
+    }
     const extension = path.extname(file.originalname).slice(1).toLowerCase();
     const temporaryPath = path.join(os.tmpdir(), `peervo-${crypto.randomUUID()}`);
 

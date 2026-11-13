@@ -7,11 +7,11 @@ const { Server } = require('socket.io');
 
 dotenv.config();
 
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET must be configured with at least 32 characters before starting Peervo.');
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured before starting Peervo.');
 }
-if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL) {
-  throw new Error('CLIENT_URL must list the exact production frontend origin before starting Peervo.');
+if (process.env.JWT_SECRET.length < 32) {
+  console.warn('JWT_SECRET should be at least 32 characters; rotate it to a longer random value.');
 }
 
 const connectDB = require('./config/db');
@@ -35,10 +35,22 @@ app.set('trust proxy', 1);
 connectDB();
 
 // CORS is an allow-list. Configure CLIENT_URL as comma-separated exact origins.
+const configuredOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => {
+    try {
+      return new URL(origin.trim()).origin;
+    } catch {
+      return null;
+    }
+  })
+  .filter(Boolean);
 const allowedOrigins = [
   ...(process.env.NODE_ENV === 'production' ? [] : ['http://localhost:5173', 'http://localhost:5174']),
-  ...(process.env.CLIENT_URL || '').split(',').map((origin) => origin.trim()),
-].filter(Boolean);
+  'https://peervo-c51g.vercel.app',
+  'https://peervo-1.vercel.app',
+  ...configuredOrigins,
+];
 
 const corsOptions = {
   origin: function (origin, callback) {

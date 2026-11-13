@@ -50,7 +50,7 @@ CLIENT_URL=http://localhost:5173
 
 Set `EMAIL_USER` and `EMAIL_PASS` to enable registration verification emails. In local development only, if email is not configured, the OTP is shown by the development app. Production never returns or logs OTP codes and requires email delivery to succeed.
 
-For production, set `CLIENT_URL` to the exact frontend origin (or comma-separated exact origins), and configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` for persistent uploads. Production startup intentionally fails when the JWT secret or Cloudinary storage configuration is missing. Grant admin access only by explicitly setting a user's `role` to `admin` in the database; email addresses never grant privileges.
+For production, set `CLIENT_URL` to the exact frontend origin (or comma-separated exact origins), and configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` for persistent uploads. A JWT secret is required; use a random value at least 32 characters long. Without Cloudinary credentials, the API remains available but uploads return a configuration error. Grant admin access only by explicitly setting a user's `role` to `admin` in the database; email addresses never grant privileges.
 
 ### 1. Backend Server Setup
 ```bash
